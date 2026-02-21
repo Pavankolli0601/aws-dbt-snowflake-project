@@ -8,3 +8,17 @@ wheels/
 
 # Virtual environments
 .venv
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# dbt artifacts
+logs/
+target/
+dbt_packages/
+
+# local configs
+profiles.yml
+.user.yml
