@@ -1,4 +1,10 @@
-.user.yml
-profiles.yml
+# dbt build artifacts
+target/
+dbt_packages/
+logs/
+
+# local/dev files
 .vscode/
 .DS_Store
+profiles.yml
+.user.yml
