@@ -1,0 +1,41 @@
+# Bronze layer: raw copy from staging with minimal transformation.
+# All models are incremental with unique_key for idempotent merges.
+
+version: 2
+
+models:
+  - name: bronze_bookings
+    description: Raw bookings from staging; incremental load by BOOKING_ID.
+    columns:
+      - name: BOOKING_ID
+        description: Primary key for the booking.
+        tests: [unique, not_null]
+      - name: LISTING_ID
+        description: FK to listing.
+        tests: [not_null]
+      - name: CREATED_AT
+        description: Record creation timestamp; used as incremental watermark.
+        tests: [not_null]
+
+  - name: bronze_hosts
+    description: Raw hosts from staging; incremental load by HOST_ID.
+    columns:
+      - name: HOST_ID
+        description: Primary key for the host.
+        tests: [unique, not_null]
+      - name: CREATED_AT
+        description: Record creation timestamp; used as incremental watermark.
+        tests: [not_null]
+
+  - name: bronze_listings
+    description: Raw listings from staging; incremental load by LISTING_ID.
+    columns:
+      - name: LISTING_ID
+        description: Primary key for the listing.
+        tests: [unique, not_null]
+      - name: HOST_ID
+        description: FK to host.
+        tests: [not_null]
+      - name: CREATED_AT
+        description: Record creation timestamp; used as incremental watermark.
+        tests: [not_null]

@@ -1,13 +1,11 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
+*.py[cod]
 build/
 dist/
-wheels/
 *.egg-info
+.venv/
 
-# Virtual environments
-.venv
 # macOS
 .DS_Store
 
@@ -19,6 +17,22 @@ logs/
 target/
 dbt_packages/
 
-# local configs
+# Local configs and secrets (never commit)
 profiles.yml
 .user.yml
+.env
+.env.*
+!.env.example
+scripts/set_env.sh
+# dbt local artifacts
+target/
+dbt_packages/
+logs/
+
+# python venv
+.venv/
+.venv*/
+
+# local secrets
+profiles.yml
+.env
