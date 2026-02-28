@@ -3,8 +3,7 @@
 {{
   config(
     target_schema='gold',
-    target_database='AIRBNB',
-    unique_key='HOST_NAME',
+    unique_key='HOST_ID',
     strategy='timestamp',
     updated_at='HOST_CREATED_AT',
     invalidate_hard_deletes=true,
@@ -13,6 +12,7 @@
 }}
 
 select
+  HOST_ID,
   HOST_NAME,
   HOST_SINCE,
   IS_SUPERHOST,

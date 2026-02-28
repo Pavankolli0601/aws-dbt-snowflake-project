@@ -1,0 +1,55 @@
+# Snapshot (SCD2) models: contract enforces column set so BI and downstream refs stay valid.
+version: 2
+
+snapshots:
+  - name: dim_bookings
+    description: SCD2 dimension for bookings; one row per booking_id per validity period.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: BOOKING_ID
+        data_type: string
+      - name: BOOKING_DATE
+        data_type: date
+      - name: BOOKING_STATUS
+        data_type: string
+      - name: CREATED_AT
+        data_type: timestamp_ntz
+      - name: dbt_valid_from
+        data_type: timestamp_ntz
+      - name: dbt_valid_to
+        data_type: timestamp_ntz
+      - name: dbt_scd_id
+        data_type: string
+      - name: dbt_updated_at
+        data_type: timestamp_ntz
+
+  - name: dim_listings
+    description: SCD2 dimension for listings; one row per listing_id per validity period.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: LISTING_ID
+        data_type: string
+      - name: PROPERTY_TYPE
+        data_type: string
+      - name: ROOM_TYPE
+        data_type: string
+      - name: CITY
+        data_type: string
+      - name: COUNTRY
+        data_type: string
+      - name: PRICE_PER_NIGHT_TAG
+        data_type: string
+      - name: LISTING_CREATED_AT
+        data_type: timestamp_ntz
+      - name: dbt_valid_from
+        data_type: timestamp_ntz
+      - name: dbt_valid_to
+        data_type: timestamp_ntz
+      - name: dbt_scd_id
+        data_type: string
+      - name: dbt_updated_at
+        data_type: timestamp_ntz

@@ -1,0 +1,5 @@
+# dbt package dependencies. Run: dbt deps
+# Pin dbt-core and dbt-snowflake via pip/requirements.txt (e.g. dbt-snowflake==1.10.0).
+packages:
+- package: dbt-labs/dbt_utils
+  version: 1.3.3

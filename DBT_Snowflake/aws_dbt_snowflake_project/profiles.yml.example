@@ -1,16 +1,16 @@
-# Copy this file to profiles.yml and fill in your Snowflake credentials.
-# Never commit profiles.yml to version control.
+# Copy to profiles.yml and never commit profiles.yml.
+# All credentials MUST come from environment variables (see README).
 
 aws_dbt_snowflake_project:
   outputs:
     dev:
-      account: your_snowflake_account
-      database: AIRBNB
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"  # Or set your password here (not recommended)
-      role: ACCOUNTADMIN
-      schema: dbt_schema
-      threads: 1
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'dbt_schema') }}"
+      threads: 2
       type: snowflake
-      user: your_username
-      warehouse: COMPUTE_WH
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
   target: dev

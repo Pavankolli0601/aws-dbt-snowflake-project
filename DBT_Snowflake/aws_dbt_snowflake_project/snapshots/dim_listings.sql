@@ -3,7 +3,6 @@
 {{
   config(
     target_schema='gold',
-    target_database='AIRBNB',
     unique_key='LISTING_ID',
     strategy='timestamp',
     updated_at='LISTING_CREATED_AT',
