@@ -1,38 +1,41 @@
+# =============================
 # Python
+# =============================
 __pycache__/
 *.py[cod]
 build/
 dist/
 *.egg-info
 .venv/
+.venv*/
 
+# =============================
 # macOS
+# =============================
 .DS_Store
 
+# =============================
 # VS Code
+# =============================
 .vscode/
 
-# dbt artifacts
-logs/
+# =============================
+# dbt Artifacts
+# =============================
 target/
+logs/
 dbt_packages/
 
-# Local configs and secrets (never commit)
+# =============================
+# Local Secrets (Never Commit)
+# =============================
 profiles.yml
 .user.yml
 .env
 .env.*
 !.env.example
+
+# =============================
+# Optional local scripts
+# =============================
 scripts/set_env.sh
-# dbt local artifacts
-target/
-dbt_packages/
-logs/
-
-# python venv
-.venv/
-.venv*/
-
-# local secrets
-profiles.yml
-.env
