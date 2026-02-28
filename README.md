@@ -1,187 +1,250 @@
-AWS DBT Snowflake Project
+# AWS S3 → Snowflake → dbt Data Engineering Project
 
-End-to-end analytics pipeline built with AWS S3 → Snowflake → dbt, implementing a Bronze → Silver → Gold architecture with incremental models, SCD Type 2 snapshots, model contracts, and CI validation.
+An end-to-end analytics pipeline built using AWS S3, Snowflake, and dbt, implementing a production-style Bronze → Silver → Gold architecture with incremental models, SCD Type 2 snapshots, data quality tests, and CI validation.
 
-Stack
+---
 
-dbt-core 1.10.19
+## Tech Stack
 
-dbt-snowflake 1.10.7
+- dbt-core 1.11.x
+- dbt-snowflake 1.11.x
+- dbt-utils 1.3.3
+- Snowflake
+- AWS S3
+- SQLFluff (linting)
+- GitHub Actions (CI/CD)
 
-dbt-utils 1.3.3
+---
 
-Snowflake
+## Project Status
 
-AWS S3
+- Successfully builds with `dbt build`
+- Bronze, Silver, and Gold layers fully operational
+- Incremental models working
+- Snapshots implemented (SCD Type 2)
+- Data quality tests passing
+- CI workflow configured
 
-Status
+---
 
-Builds successfully with dbt build
+# Architecture
 
-29 tests passing
+This project follows the Medallion Architecture pattern.
 
-1 intentional warning (source_tests)
+| Layer     | Path              | Purpose |
+|------------|------------------|----------|
+| Bronze     | models/bronze/   | Raw ingestion using incremental merge logic |
+| Silver     | models/silver/   | Cleaned and standardized transformations |
+| Gold       | models/gold/     | Analytics-ready dimensional models + OBT |
+| Snapshots  | snapshots/       | SCD Type 2 historical tracking |
+| Macros     | macros/          | Reusable SQL utilities |
+| Tests      | tests/           | Schema and singular data tests |
 
-Architecture
-Project Structure
-Layer	Path	Purpose
-Bronze	models/bronze/	Incremental raw ingestion from staging with merge logic
-Silver	models/silver/	Cleaned and standardized models with rolling-window lookback
-Gold	models/gold/	Analytics-ready models (OBT) with enforced contracts
-Snapshots	snapshots/	SCD Type 2 dimensions (dim_bookings, dim_hosts, dim_listings)
-Macros	macros/	Reusable SQL utilities
-Tests	tests/	Schema and singular tests
-Data Modeling
-Bronze
+---
 
-Incremental models using merge strategy
+# Data Modeling Strategy
 
-Business-key based idempotent loads
+## Bronze Layer
 
-Silver
+- Incremental models using merge strategy
+- Idempotent loads using business keys
+- Safe re-runs
+- Raw ingestion from staging
 
-Standardized data
+Models:
+- bronze_bookings
+- bronze_hosts
+- bronze_listings
 
-Incremental with rolling lookback (vars.lookback_days, default 3)
+---
 
-Relationships enforced via tests
+## Silver Layer
 
-Gold
+- Standardized and cleaned data
+- Incremental models with rolling lookback window
+- Relationship tests enforced
 
-One Big Table (OBT) for reporting
+Override lookback window:
 
-Enforced dbt model contract
+```
+dbt build --vars 'lookback_days: 7'
+```
 
-IDs (BOOKING_ID, LISTING_ID, HOST_ID) stored as VARCHAR (UUID-compatible)
+Default lookback: 3 days
 
-BOOKING_DATE stored as DATE
+---
 
-Snapshots
+## Gold Layer
 
-SCD Type 2 implementation
+Analytics-ready dimensional models:
 
-Historical tracking of booking and listing changes
+- dim_bookings
+- dim_hosts
+- dim_listings
+- fact
+- obt (One Big Table)
 
-Running the Project
-Install Dependencies
+Features:
+- Star-schema modeling
+- Enforced dbt model contracts
+- Primary key validations
+- Reporting-ready structure
+
+Data types:
+- IDs stored as VARCHAR (UUID compatible)
+- BOOKING_DATE stored as DATE
+
+---
+
+## Snapshots (SCD Type 2)
+
+Implements historical tracking for:
+
+- Bookings
+- Hosts
+- Listings
+
+Features:
+- Valid-from / valid-to timestamps
+- Change detection
+- Historical state preservation
+
+---
+
+# Running the Project
+
+## 1. Install Dependencies
+
+```
 pip install -r requirements.txt
-Configure Environment Variables
+```
 
-Required variables:
+## 2. Configure Environment Variables
 
-SNOWFLAKE_ACCOUNT
-SNOWFLAKE_USER
-SNOWFLAKE_PASSWORD
-SNOWFLAKE_ROLE
-SNOWFLAKE_WAREHOUSE
-SNOWFLAKE_DATABASE
+Required:
+
+- SNOWFLAKE_ACCOUNT
+- SNOWFLAKE_USER
+- SNOWFLAKE_PASSWORD
+- SNOWFLAKE_ROLE
+- SNOWFLAKE_WAREHOUSE
+- SNOWFLAKE_DATABASE
 
 Optional:
 
-SNOWFLAKE_SCHEMA (default: dbt_schema)
+- SNOWFLAKE_SCHEMA
 
-Set them via:
+You can configure using:
 
-Shell export
+- .env file (not committed)
+- Shell export
+- GitHub repository secrets (CI)
 
-.env file (do not commit)
+---
 
-scripts/set_env.sh (not committed)
+## 3. Create Local Profile
 
-GitHub Secrets (for CI)
-
-Create local profile:
-
+```
 cp profiles.yml.example profiles.yml
-Build and Test
-make deps
-make build
+```
 
-Available commands:
+---
 
-Command	Action
-make deps	Install dbt packages
-make build	Run models + tests
-make run	Run models only
-make test	Run tests only
-make snapshot	Run snapshots
-make lint	SQLFluff lint
-make docs	Generate dbt docs
+## 4. Install dbt Packages
 
-Override incremental lookback:
-
-dbt build --vars 'lookback_days: 7'
-Data Quality
-
-Unique and not-null constraints on primary keys
-
-Relationship tests between fact and dimension models
-
-Source-level validation tests
-
-29 tests passing
-
-1 intentional warning demonstrating anomaly detection
-
-CI (GitHub Actions)
-Pull Requests / Push to main
-
+```
 dbt deps
+```
 
-dbt compile
+---
 
+## 5. Build the Project
+
+```
 dbt build
+```
 
+---
+
+# Makefile Commands
+
+| Command         | Description |
+|----------------|------------|
+| make deps      | Install dbt packages |
+| make build     | Run models + tests |
+| make run       | Run models only |
+| make test      | Run tests only |
+| make snapshot  | Run snapshots |
+| make lint      | Run SQLFluff |
+| make docs      | Generate dbt documentation |
+
+---
+
+# Data Quality
+
+Implemented validations:
+
+- Unique and not-null tests on primary keys
+- Relationship tests between fact and dimensions
+- Source-level validation tests
+- Enforced contracts in Gold layer
+
+All validations executed via:
+
+```
 dbt test
+```
 
-sqlfluff lint
+---
 
-Upload artifacts (manifest.json, run_results.json)
+# CI/CD (GitHub Actions)
 
-Daily Job
+On Pull Request / Push to main:
 
-dbt deps
+- dbt deps
+- dbt compile
+- dbt build
+- dbt test
+- sqlfluff lint
+- Upload artifacts (manifest.json, run_results.json)
 
-dbt source freshness
+Optional scheduled workflow:
 
-dbt test
+- dbt source freshness
+- dbt test
 
-All Snowflake credentials are stored securely as GitHub repository secrets.
+Snowflake credentials are securely stored as GitHub repository secrets.
 
-Security
+---
 
-profiles.yml is not committed
+# Security
 
-Credentials managed via environment variables only
+- profiles.yml is not committed
+- Credentials managed via environment variables
+- .env ignored
+- target/, dbt_packages/, .venv/ ignored
+- No hardcoded secrets in repository
 
-target/, dbt_packages/, .venv/ are ignored
+If credentials are exposed:
+1. Rotate them in Snowflake
+2. Remove from git history
+3. Reconfigure using environment variables
 
-package-lock.yml committed for reproducible installs
+---
 
-If credentials were ever committed:
+# Key Features Demonstrated
 
-Rotate them in Snowflake
+- End-to-end AWS → Snowflake → dbt pipeline
+- Incremental merge-based ingestion
+- Rolling-window late-arriving data handling
+- Medallion architecture (Bronze → Silver → Gold)
+- SCD Type 2 snapshots
+- Enforced model contracts
+- Automated CI validation
+- Production-style data engineering practices
 
-Remove from git history
+---
 
-Reconfigure using environment variables
+# Summary
 
-Key Features Demonstrated
-
-End-to-end AWS → Snowflake → dbt pipeline
-
-Incremental merge-based ingestion
-
-Rolling-window late-arriving data handling
-
-Star-schema style Gold layer
-
-SCD Type 2 snapshots
-
-Enforced dbt model contracts
-
-Automated CI validation
-
-Reproducible dependency management
-
-This project reflects production-style data modeling practices using the modern data stack.
+This project demonstrates a production-ready modern data stack implementation using Snowflake, dbt, and AWS S3. It showcases scalable architecture, reliable incremental processing, historical tracking, automated testing, and CI-driven validation — reflecting real-world data engineering best practices.
