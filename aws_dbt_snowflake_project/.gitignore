@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info
+.venv/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# dbt artifacts
+logs/
+target/
+dbt_packages/
+
+# Local configs
+profiles.yml
+.user.yml
