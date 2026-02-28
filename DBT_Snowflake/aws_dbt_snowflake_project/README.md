@@ -1,87 +1,187 @@
-# AWS DBT Snowflake Project
+AWS DBT Snowflake Project
 
-Data pipeline: **AWS S3 → Snowflake (staging) → dbt** with **Bronze → Silver → Gold** layers.
+End-to-end analytics pipeline built with AWS S3 → Snowflake → dbt, implementing a Bronze → Silver → Gold architecture with incremental models, SCD Type 2 snapshots, model contracts, and CI validation.
 
-**Stack:** dbt-core 1.10.19, dbt-snowflake 1.10.7, dbt-utils 1.3.3.  
-**Status:** Project builds with `dbt build`; 29 tests pass, 1 intentional warn (`source_tests`).
+Stack
 
----
+dbt-core 1.10.19
 
-## Quick start
+dbt-snowflake 1.10.7
 
-```bash
+dbt-utils 1.3.3
+
+Snowflake
+
+AWS S3
+
+Status
+
+Builds successfully with dbt build
+
+29 tests passing
+
+1 intentional warning (source_tests)
+
+Architecture
+Project Structure
+Layer	Path	Purpose
+Bronze	models/bronze/	Incremental raw ingestion from staging with merge logic
+Silver	models/silver/	Cleaned and standardized models with rolling-window lookback
+Gold	models/gold/	Analytics-ready models (OBT) with enforced contracts
+Snapshots	snapshots/	SCD Type 2 dimensions (dim_bookings, dim_hosts, dim_listings)
+Macros	macros/	Reusable SQL utilities
+Tests	tests/	Schema and singular tests
+Data Modeling
+Bronze
+
+Incremental models using merge strategy
+
+Business-key based idempotent loads
+
+Silver
+
+Standardized data
+
+Incremental with rolling lookback (vars.lookback_days, default 3)
+
+Relationships enforced via tests
+
+Gold
+
+One Big Table (OBT) for reporting
+
+Enforced dbt model contract
+
+IDs (BOOKING_ID, LISTING_ID, HOST_ID) stored as VARCHAR (UUID-compatible)
+
+BOOKING_DATE stored as DATE
+
+Snapshots
+
+SCD Type 2 implementation
+
+Historical tracking of booking and listing changes
+
+Running the Project
+Install Dependencies
 pip install -r requirements.txt
-cp profiles.yml.example profiles.yml   # then set env vars (see below)
+Configure Environment Variables
+
+Required variables:
+
+SNOWFLAKE_ACCOUNT
+SNOWFLAKE_USER
+SNOWFLAKE_PASSWORD
+SNOWFLAKE_ROLE
+SNOWFLAKE_WAREHOUSE
+SNOWFLAKE_DATABASE
+
+Optional:
+
+SNOWFLAKE_SCHEMA (default: dbt_schema)
+
+Set them via:
+
+Shell export
+
+.env file (do not commit)
+
+scripts/set_env.sh (not committed)
+
+GitHub Secrets (for CI)
+
+Create local profile:
+
+cp profiles.yml.example profiles.yml
+Build and Test
 make deps
 make build
-```
 
-Set [environment variables](#how-to-set-environment-variables-safely) before running. `dbt build` runs models and tests.
+Available commands:
 
-| Make target     | Command                |
-|-----------------|------------------------|
-| `make deps`     | `dbt deps`             |
-| `make build`    | `dbt build`            |
-| `make test`     | `dbt test`             |
-| `make lint`     | `sqlfluff lint`        |
-| `make run`      | `dbt run`              |
-| `make snapshot` | `dbt snapshot`        |
-| `make docs`     | `dbt docs generate`    |
-| `make all`      | deps + build + lint     |
+Command	Action
+make deps	Install dbt packages
+make build	Run models + tests
+make run	Run models only
+make test	Run tests only
+make snapshot	Run snapshots
+make lint	SQLFluff lint
+make docs	Generate dbt docs
 
-Override incremental lookback (default 3 days): `dbt run --vars 'lookback_days: 7'` or `dbt build --vars 'lookback_days: 7'`.
+Override incremental lookback:
 
----
+dbt build --vars 'lookback_days: 7'
+Data Quality
 
-## Project structure
+Unique and not-null constraints on primary keys
 
-| Layer    | Path              | Description |
-|----------|-------------------|-------------|
-| Bronze   | `models/bronze/`  | Raw incremental tables from staging; merge by business key. |
-| Silver   | `models/silver/`  | Cleaned models; incremental with rolling-window lookback. |
-| Gold     | `models/gold/`    | One Big Table (OBT) plus ephemeral models for snapshots. |
-| Snapshots| `snapshots/`      | SCD2: dim_bookings, dim_hosts, dim_listings. |
-| Macros   | `macros/`         | Reusable SQL (e.g. `multiply`, `tag`). |
-| Tests    | `tests/`          | Singular and schema tests. |
+Relationship tests between fact and dimension models
 
-**Gold layer:** OBT enforces a dbt model contract. IDs (`BOOKING_ID`, `LISTING_ID`, `HOST_ID`) are stored as VARCHAR (UUID-compatible); `BOOKING_DATE` is stored as DATE. Snapshots dim_bookings and dim_listings also have enforced contracts.
+Source-level validation tests
 
-**Config:** `vars.lookback_days` (default `3`) in `dbt_project.yml` for incremental lookback.
+29 tests passing
 
----
+1 intentional warning demonstrating anomaly detection
 
-## How to set environment variables safely
+CI (GitHub Actions)
+Pull Requests / Push to main
 
-Do not put Snowflake credentials in `profiles.yml` or commit them. Use environment variables only.
+dbt deps
 
-**Required:** `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`, `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`.  
-**Optional:** `SNOWFLAKE_SCHEMA` (default `dbt_schema`).
+dbt compile
 
-**Option 1 — .env (do not commit):** Create `.env` with `export SNOWFLAKE_ACCOUNT=...` etc., then `source .env` before running dbt.
+dbt build
 
-**Option 2 — Shell:** `export SNOWFLAKE_ACCOUNT=...` (and the rest) in your session.
+dbt test
 
-**Option 3 — Script:** Copy `scripts/set_env_example.sh` to `scripts/set_env.sh`, set values (do not commit `set_env.sh`), then `source scripts/set_env.sh`.
+sqlfluff lint
 
-Then: `cp profiles.yml.example profiles.yml` and run `make build`.
+Upload artifacts (manifest.json, run_results.json)
 
-**CI/CD:** Store each value as a repository secret; reference in the workflow. Do not log or echo secrets.
+Daily Job
 
----
+dbt deps
 
-## CI (GitHub Actions)
+dbt source freshness
 
-| Trigger        | Job       | Steps |
-|----------------|-----------|--------|
-| Push/PR to main| `dbt-pr`  | dbt deps → compile → build → test → sqlfluff lint; upload manifest and run_results. |
-| Daily 06:00 UTC| `dbt-daily` | dbt deps → source freshness → test. |
+dbt test
 
-Secrets: `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`, `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`.
+All Snowflake credentials are stored securely as GitHub repository secrets.
 
----
+Security
 
-## If `profiles.yml` was ever committed
+profiles.yml is not committed
 
-1. Rotate credentials in Snowflake.
-2. Remove from history: `git filter-repo --path profiles.yml --invert-paths --force` (or BFG).
-3. Ensure `.gitignore` includes `profiles.yml` and `.env`; recreate `profiles.yml` from the example and use env vars only.
+Credentials managed via environment variables only
+
+target/, dbt_packages/, .venv/ are ignored
+
+package-lock.yml committed for reproducible installs
+
+If credentials were ever committed:
+
+Rotate them in Snowflake
+
+Remove from git history
+
+Reconfigure using environment variables
+
+Key Features Demonstrated
+
+End-to-end AWS → Snowflake → dbt pipeline
+
+Incremental merge-based ingestion
+
+Rolling-window late-arriving data handling
+
+Star-schema style Gold layer
+
+SCD Type 2 snapshots
+
+Enforced dbt model contracts
+
+Automated CI validation
+
+Reproducible dependency management
+
+This project reflects production-style data modeling practices using the modern data stack.
