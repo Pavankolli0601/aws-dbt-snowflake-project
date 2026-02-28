@@ -1,111 +1,187 @@
-### AWS + Snowflake + dbt Data Pipeline
+AWS DBT Snowflake Project
 
-## About This Project
+End-to-end analytics pipeline built with AWS S3 → Snowflake → dbt, implementing a Bronze → Silver → Gold architecture with incremental models, SCD Type 2 snapshots, model contracts, and CI validation.
 
-In this project, I built an end-to-end data pipeline using AWS, Snowflake, and dbt to simulate a real-world analytics workflow.
+Stack
 
-The goal was to take raw Airbnb-style booking data stored in Amazon S3 and transform it into analytics-ready tables using a structured Bronze → Silver → Gold architecture.
+dbt-core 1.10.19
 
-This project focuses on performance, scalability, and clean data modeling practices.
+dbt-snowflake 1.10.7
 
-## What I Built
+dbt-utils 1.3.3
 
-1. Data Ingestion (AWS → Snowflake)
-	•	Uploaded CSV files to Amazon S3
-	•	Created an IAM role to securely connect Snowflake to S3
-	•	Loaded raw data into the STAGING schema in Snowflake
-	•	Organized warehouse structure using separate schemas:
-	•	BRONZE
-	•	SILVER
-	•	GOLD
+Snowflake
 
-2. Bronze Layer
-This layer pulls raw data from STAGING and applies minimal transformation.
-	•	Implemented incremental loading
-	•	Used timestamp logic to process only new records
-	•	Designed for performance and scalability
+AWS S3
 
-The goal here is to preserve raw structure while optimizing load performance.
+Status
 
-3. Silver Layer
-This is where business logic is applied.
-	•	Cleaned and standardized data
-	•	Enforced unique keys
-	•	Created derived columns (e.g., total booking amount)
-	•	Used custom dbt macros to keep SQL reusable and clean
-	•	Continued using incremental models for efficiency
+Builds successfully with dbt build
 
-This layer prepares the data for analytics.
+29 tests passing
 
-4. Gold Layer
-This is the analytics-ready layer.
+1 intentional warning (source_tests)
 
-I implemented:
-	•	Star schema design
-	•	Dimension tables:
-	•	DIM_BOOKINGS
-	•	DIM_HOSTS
-	•	DIM_LISTINGS
-	•	FACT table
-	•	One Big Table (OBT) for simplified reporting
+Architecture
+Project Structure
+Layer	Path	Purpose
+Bronze	models/bronze/	Incremental raw ingestion from staging with merge logic
+Silver	models/silver/	Cleaned and standardized models with rolling-window lookback
+Gold	models/gold/	Analytics-ready models (OBT) with enforced contracts
+Snapshots	snapshots/	SCD Type 2 dimensions (dim_bookings, dim_hosts, dim_listings)
+Macros	macros/	Reusable SQL utilities
+Tests	tests/	Schema and singular tests
+Data Modeling
+Bronze
 
-This structure is optimized for BI tools and reporting queries.
+Incremental models using merge strategy
 
-5. Snapshots (SCD Type 2)
-To track historical changes, I implemented dbt snapshots.
-	•	Timestamp-based strategy
-	•	Tracks updates over time
-	•	Supports slowly changing dimensions
+Business-key based idempotent loads
 
-This allows historical analysis instead of overwriting records.
+Silver
 
-6. Data Quality
-	•	Implemented custom source tests
-	•	Added validation checks on booking amount
-	•	Configured test severity levels
+Standardized data
 
-This ensures early detection of bad or unexpected data.
+Incremental with rolling lookback (vars.lookback_days, default 3)
 
-## Project Structure
+Relationships enforced via tests
 
-# models/
-	•	bronze/
-	•	silver/
-	•	gold/
-	•	sources/
+Gold
 
-snapshots/
-macros/
-tests/
-dbt_project.yml
+One Big Table (OBT) for reporting
 
-# How to Run
+Enforced dbt model contract
 
-Install dependencies:
+IDs (BOOKING_ID, LISTING_ID, HOST_ID) stored as VARCHAR (UUID-compatible)
 
-pip install dbt-core dbt-snowflake
+BOOKING_DATE stored as DATE
 
-# Run transformations:
+Snapshots
 
-dbt run
+SCD Type 2 implementation
 
-Run snapshots:
+Historical tracking of booking and listing changes
 
-dbt snapshot
+Running the Project
+Install Dependencies
+pip install -r requirements.txt
+Configure Environment Variables
 
-Run tests:
+Required variables:
+
+SNOWFLAKE_ACCOUNT
+SNOWFLAKE_USER
+SNOWFLAKE_PASSWORD
+SNOWFLAKE_ROLE
+SNOWFLAKE_WAREHOUSE
+SNOWFLAKE_DATABASE
+
+Optional:
+
+SNOWFLAKE_SCHEMA (default: dbt_schema)
+
+Set them via:
+
+Shell export
+
+.env file (do not commit)
+
+scripts/set_env.sh (not committed)
+
+GitHub Secrets (for CI)
+
+Create local profile:
+
+cp profiles.yml.example profiles.yml
+Build and Test
+make deps
+make build
+
+Available commands:
+
+Command	Action
+make deps	Install dbt packages
+make build	Run models + tests
+make run	Run models only
+make test	Run tests only
+make snapshot	Run snapshots
+make lint	SQLFluff lint
+make docs	Generate dbt docs
+
+Override incremental lookback:
+
+dbt build --vars 'lookback_days: 7'
+Data Quality
+
+Unique and not-null constraints on primary keys
+
+Relationship tests between fact and dimension models
+
+Source-level validation tests
+
+29 tests passing
+
+1 intentional warning demonstrating anomaly detection
+
+CI (GitHub Actions)
+Pull Requests / Push to main
+
+dbt deps
+
+dbt compile
+
+dbt build
 
 dbt test
 
+sqlfluff lint
 
-## What This Project Demonstrates
-	•	End-to-end data pipeline design
-	•	AWS S3 integration with Snowflake
-	•	Incremental data processing
-	•	Star schema modeling
-	•	SCD Type 2 implementation
-	•	Custom dbt macro development
-	•	Data quality testing
-	•	Modern data stack best practices
+Upload artifacts (manifest.json, run_results.json)
 
-### This project reflects how a real-world analytics pipeline is structured using the modern data stack.
+Daily Job
+
+dbt deps
+
+dbt source freshness
+
+dbt test
+
+All Snowflake credentials are stored securely as GitHub repository secrets.
+
+Security
+
+profiles.yml is not committed
+
+Credentials managed via environment variables only
+
+target/, dbt_packages/, .venv/ are ignored
+
+package-lock.yml committed for reproducible installs
+
+If credentials were ever committed:
+
+Rotate them in Snowflake
+
+Remove from git history
+
+Reconfigure using environment variables
+
+Key Features Demonstrated
+
+End-to-end AWS → Snowflake → dbt pipeline
+
+Incremental merge-based ingestion
+
+Rolling-window late-arriving data handling
+
+Star-schema style Gold layer
+
+SCD Type 2 snapshots
+
+Enforced dbt model contracts
+
+Automated CI validation
+
+Reproducible dependency management
+
+This project reflects production-style data modeling practices using the modern data stack.
